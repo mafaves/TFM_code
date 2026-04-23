@@ -24,36 +24,52 @@ class StratifiedGroupKFold:
         self.shuffle = shuffle
         self.random_state = random_state
 
+    # def split(self, X, y, groups):
+    #     """
+    #     Generate train/test indices for each fold.
+
+    #     Args:
+    #         X (np.array or pd.DataFrame): Feature matrix (not used directly).
+    #         y (np.array): Labels.
+    #         groups (np.array): Group/patient IDs.
+
+    #     Yields:
+    #         tuple: (train_idx, test_idx) as numpy arrays.
+    #     """
+    #     unique_groups = np.unique(groups)
+    #     group_labels = np.array([y[groups == g][0] for g in unique_groups])
+
+    #     cv = SGKF(
+    #         n_splits=self.n_splits,
+    #         shuffle=self.shuffle,
+    #         random_state=self.random_state
+    #     )
+
+    #     for train_groups, test_groups in cv.split(unique_groups, group_labels, groups=unique_groups):
+    #         train_group_set = set(unique_groups[train_groups])
+    #         test_group_set = set(unique_groups[test_groups])
+
+    #         assert train_group_set.isdisjoint(test_group_set), \
+    #             "Data leakage detected! Some patients appear in both train and test!"
+
+    #         train_idx = np.where(np.isin(groups, train_group_set))[0]
+    #         test_idx = np.where(np.isin(groups, test_group_set))[0]
+
+    #         yield train_idx, test_idx
+
     def split(self, X, y, groups):
-        """
-        Generate train/test indices for each fold.
-
-        Args:
-            X (np.array or pd.DataFrame): Feature matrix (not used directly).
-            y (np.array): Labels.
-            groups (np.array): Group/patient IDs.
-
-        Yields:
-            tuple: (train_idx, test_idx) as numpy arrays.
-        """
-        unique_groups = np.unique(groups)
-        group_labels = np.array([y[groups == g][0] for g in unique_groups])
-
         cv = SGKF(
             n_splits=self.n_splits,
             shuffle=self.shuffle,
             random_state=self.random_state
         )
 
-        for train_groups, test_groups in cv.split(unique_groups, group_labels, groups=unique_groups):
-            train_group_set = set(unique_groups[train_groups])
-            test_group_set = set(unique_groups[test_groups])
+        for train_idx, test_idx in cv.split(X, y, groups):
+            train_groups = set(groups[train_idx])
+            test_groups = set(groups[test_idx])
 
-            assert train_group_set.isdisjoint(test_group_set), \
-                "Data leakage detected! Some patients appear in both train and test!"
-
-            train_idx = np.where(np.isin(groups, train_group_set))[0]
-            test_idx = np.where(np.isin(groups, test_group_set))[0]
+            assert train_groups.isdisjoint(test_groups), \
+                "Data leakage detected!"
 
             yield train_idx, test_idx
 
