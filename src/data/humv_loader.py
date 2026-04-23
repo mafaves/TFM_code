@@ -3,8 +3,8 @@ import pandas as pd
 
 LABEL_MAPPING = {
     'HC': 0,  # Healthy Control
-    'NFC': 0, # Neurologic Control (with some neurological condition, but not PD)
-    'AC': 1,  # Alzheimer Control
+    'NFC': 0, # Negative Family Carrier (considered as healthy for binary classification)
+    'AC': 1,  # Asymtomatic Carrier of G2019S LRRK2 mutation
     'PD': 2   # Parkinson's Disease
 }
 
@@ -25,6 +25,8 @@ def load_audio_data(
         │   └── HUMV_HC_001/
         │       └── vocal.wav
         ├── NFC/
+        │   └── HUMV_NFC_001/
+        │       └── vocal.wav
         ├── AC/
         │   └── HUMV_AC_001/
         │       └── vocal.wav
