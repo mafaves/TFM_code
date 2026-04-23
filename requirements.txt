@@ -8,6 +8,7 @@ librosa==0.9.2
 sox
 IPython
 spafe
+opensmile
 
 # Machine learning and PyTorch
 torch
