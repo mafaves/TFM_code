@@ -8,6 +8,7 @@ def extract_librosa_features(
     audio_chunks,
     labels,
     patient_ids,
+    exercises=None,
     sr=16000,
     n_mfcc=13,
     n_mels=128,
@@ -27,6 +28,7 @@ def extract_librosa_features(
         audio_chunks (np.array): Array of audio waveforms.
         labels (np.array): Labels for each chunk.
         patient_ids (np.array): Patient IDs for each chunk.
+        exercises (np.array, optional): Exercise names for each chunk.
         sr (int): Sampling rate.
         n_mfcc (int): Number of MFCCs to extract.
         n_mels (int): Number of mel bands.
@@ -36,6 +38,7 @@ def extract_librosa_features(
 
     Returns:
         pd.DataFrame: DataFrame with extracted features + metadata columns.
+            Columns: patient_id, label, exercise, [feature columns...]
     """
     features_list = []
     iterator = tqdm(enumerate(audio_chunks), total=len(audio_chunks)) if verbose else enumerate(audio_chunks)
@@ -71,6 +74,14 @@ def extract_librosa_features(
     df = pd.DataFrame(features_list)
     df.insert(0, 'patient_id', patient_ids)
     df.insert(1, 'label', labels)
+    
+    # Add exercise column if provided
+    if exercises is not None:
+        if len(exercises) != len(audio_chunks):
+            raise ValueError(f"Exercises length ({len(exercises)}) doesn't match chunks ({len(audio_chunks)})")
+        df.insert(2, 'exercise', exercises)
+    else:
+        df.insert(2, 'exercise', 'unknown')
 
     nan_cols = df.isnull().sum()
     cols_with_nan = nan_cols[nan_cols > 0].index.tolist()
@@ -78,5 +89,6 @@ def extract_librosa_features(
         print(f"Columns with NaN values: {cols_with_nan}")
 
     print(f"Librosa features shape: {df.shape}")
+    print(f"Unique exercises: {df['exercise'].unique()}")
 
     return df
