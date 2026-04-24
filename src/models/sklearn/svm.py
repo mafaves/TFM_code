@@ -31,7 +31,7 @@ class SVMClassifier:
         gamma='scale',
         degree=3,
         class_weight='balanced',
-        probability=True,
+        probability=False,
         random_state=42,
         cache_size=1000
     ):
