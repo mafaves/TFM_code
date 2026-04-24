@@ -6,6 +6,7 @@ def process_and_split_audio(
     audio_path,
     label,
     patient_id,
+    exercise=None,
     start_time=0,
     chunk_duration=5,
     max_duration=None,
@@ -23,6 +24,7 @@ def process_and_split_audio(
         audio_path (str): Path to the audio file.
         label (int): Label associated with the audio.
         patient_id (str): Patient ID.
+        exercise (str, optional): Exercise name (e.g., 'vocal', 'text').
         start_time (float): Start time in seconds.
         chunk_duration (float): Duration of each chunk in seconds.
         max_duration (float, optional): Maximum duration to process. None = use entire audio.
@@ -34,7 +36,7 @@ def process_and_split_audio(
         min_chunk_ratio (float): Minimum chunk length ratio (0.7 = keep 70% of target).
 
     Returns:
-        list: List of tuples (audio_chunk, label, patient_id).
+        list: List of tuples (audio_chunk, label, patient_id, exercise).
     """
     y, sr = librosa.load(audio_path, sr=None)
 
@@ -83,7 +85,7 @@ def process_and_split_audio(
                 left_pad = pad_size // 2
                 right_pad = pad_size - left_pad
                 chunk = np.pad(chunk, (left_pad, right_pad), 'constant')
-            chunks.append((chunk, label, patient_id))
+            chunks.append((chunk, label, patient_id, exercise))
 
         if end_index == total_samples:
             break
@@ -105,6 +107,7 @@ def execute_preprocess_and_split(
     file_path_column='File_Path',
     label_column='Label',
     patient_column='Patient',
+    audio_name_column='Audio_Name',
     overlap=0,
     min_chunk_ratio=0.7
 ):
@@ -113,6 +116,7 @@ def execute_preprocess_and_split(
 
     Args:
         df (pd.DataFrame): DataFrame with audio metadata.
+            Must contain 'Audio_Name' column for exercise type.
         start_time (float): Start time in seconds.
         chunk_duration (float): Duration of each chunk.
         max_duration (float, optional): Maximum duration to process.
@@ -123,11 +127,16 @@ def execute_preprocess_and_split(
         file_path_column (str): Column name for file paths.
         label_column (str): Column name for labels.
         patient_column (str): Column name for patient IDs.
+        audio_name_column (str): Column name for audio name (contains exercise type).
         overlap (float): Overlap between chunks.
         min_chunk_ratio (float): Minimum chunk length ratio.
 
     Returns:
-        tuple: (chunks_np, labels_np, patient_ids_np)
+        tuple: (chunks_np, labels_np, patient_ids_np, exercises_np)
+            - chunks_np: Audio chunks
+            - labels_np: Labels
+            - patient_ids_np: Patient IDs
+            - exercises_np: Exercise names (extracted from Audio_Name column)
     """
     all_chunks = []
 
@@ -135,11 +144,28 @@ def execute_preprocess_and_split(
         file_path = row[file_path_column]
         label = row[label_column]
         patient_id = row[patient_column]
+        
+        # Extract exercise from Audio_Name column
+        # Audio_Name format: "001_PD" -> extract exercise part
+        # If full format like "vocal_001_PD", extract just the exercise type
+        audio_name = row.get(audio_name_column, 'unknown')
+        
+        # Try to extract exercise name (first part before underscore if format is "exercise_number_label")
+        # Otherwise use the whole Audio_Name
+        if audio_name and '_' in str(audio_name):
+            parts = str(audio_name).split('_')
+            if len(parts) >= 2 and parts[0] in ['vocal', 'text', 'reading', 'diado', 'patachaka']:
+                exercise = parts[0]  # Known exercise types
+            else:
+                exercise = audio_name  # Use full name
+        else:
+            exercise = str(audio_name)
 
         chunks = process_and_split_audio(
             audio_path=file_path,
             label=label,
             patient_id=patient_id,
+            exercise=exercise,
             start_time=start_time,
             chunk_duration=chunk_duration,
             max_duration=max_duration,
@@ -155,10 +181,40 @@ def execute_preprocess_and_split(
     print(f"Total chunks generated: {len(all_chunks)}")
 
     if len(all_chunks) > 0:
-        chunks, labels, ids = zip(*all_chunks)
+        chunks, labels, ids, exercises = zip(*all_chunks)
+        exercises_np = np.array(exercises)
+        
+        print(f"Unique exercises: {np.unique(exercises_np)}")
+        
         return (
             np.array(chunks, dtype=np.float32),
             np.array(labels),
-            np.array(ids)
+            np.array(ids),
+            exercises_np
         )
-    return np.array([]), np.array([]), np.array([])
+    return np.array([]), np.array([]), np.array([]), np.array([])
+
+
+def get_unique_exercises(df, audio_name_column='Audio_Name'):
+    """
+    Extract unique exercise types from a DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame with audio metadata.
+        audio_name_column (str): Column name for audio name.
+
+    Returns:
+        np.array: Unique exercise names.
+    """
+    exercises = []
+    for audio_name in df[audio_name_column]:
+        if audio_name and '_' in str(audio_name):
+            parts = str(audio_name).split('_')
+            if len(parts) >= 2 and parts[0] in ['vocal', 'text', 'reading', 'diado', 'patachaka']:
+                exercises.append(parts[0])
+            else:
+                exercises.append(str(audio_name))
+        else:
+            exercises.append(str(audio_name))
+    
+    return np.unique(exercises)
