@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.so
 .Python
@@ -19,6 +20,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*/__pycache__/
+src/models/__pycache__/
 
 # Virtual environments
 venv/
@@ -28,7 +31,7 @@ env/
 
 # Jupyter
 .ipynb_checkpoints/
-#*.ipynb
+# *.ipynb
 
 # IDEs
 .vscode/
@@ -56,3 +59,4 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+src/models/__pycache__/
