@@ -128,7 +128,7 @@ class SklearnTrainer:
         """
         from .cross_validation import StratifiedGroupKFold
 
-        cv = StratifiedGroupKFold(n_splits=self.n_splits, random_state=self.random_state)
+        cv = StratifiedGroupKFold(n_splits=self.n_splits, random_state=self.random_state, shuffle=True)
 
         patient_label_map = self._get_patient_label_map(patient_ids, y)
         unique_patients = np.array(list(patient_label_map.keys()))
@@ -405,9 +405,9 @@ class SklearnTrainer:
                 },
                 'patient_preds': {
                     'patient_id': test_patients,
-                    'y_true': patient_true.values,
-                    'y_pred': patient_pred.values,
-                    'y_score': patient_scores.values
+                    'y_true': patient_true.loc[test_patients].values,
+                    'y_pred': patient_pred.loc[test_patients].values,
+                    'y_score': patient_scores.loc[test_patients].values
                 },
                 'test_external': test_external_results
             })
