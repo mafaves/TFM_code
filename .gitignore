@@ -48,7 +48,7 @@ outputs/
 *.mp3
 *.flac
 *.npy
-*.csv
+*.ods
 *.pkl
 *.pth
 
